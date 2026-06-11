@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 
 const EditModal = ({ task, onSave, onClose }) => {
-  const [newTitle, setNewTitle] = useState(task.title);
+  const [newTitle, setNewTitle] = useState(task?.title || "");
+  const [newDueDate, setNewDueDate] = useState(task?.dueDate || "");
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (newTitle.trim()) {
-      onSave(task._id, newTitle);
+      onSave(task._id, newTitle, newDueDate);
     }
   };
 
@@ -20,6 +21,13 @@ const EditModal = ({ task, onSave, onClose }) => {
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
             autoFocus
+            className="modal-input"
+            placeholder="Titre de la tâche"
+          />
+          <input
+            type="date"
+            value={newDueDate ? newDueDate.split('T')[0] : ""}
+            onChange={(e) => setNewDueDate(e.target.value)}
             className="modal-input"
           />
           <div className="modal-buttons">

@@ -5,7 +5,19 @@ import EditModal from "./EditModal";
 const TaskList = ({ tasks, setTasks }) => {
   const [editingTask, setEditingTask] = useState(null);
 
-  // Basculer l'état complété
+  // ✅ Fonction pour vérifier si une tâche est en retard
+  const isOverdue = (task) => {
+    if (!task.dueDate || task.completed) return false;
+    return new Date(task.dueDate) < new Date();
+  };
+
+  // ✅ Formater la date
+  const formatDate = (dateString) => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  };
+
   const toggleComplete = async (task) => {
     try {
       const res = await api.put(`/tasks/${task._id}`, { 
@@ -15,25 +27,19 @@ const TaskList = ({ tasks, setTasks }) => {
         prev.map((t) => (t._id === task._id ? res.data : t))
       );
     } catch (err) {
-      alert("Erreur lors de la mise à jour de la tâche");
+      alert("Erreur lors de la mise à jour");
     }
   };
 
-  // Supprimer une tâche
   const deleteTask = async (id) => {
-    if (!id) {
-      alert("ID de tâche invalide");
-      return;
-    }
     try {
       await api.delete(`/tasks/${id}`);
       setTasks((prev) => prev.filter((task) => task._id !== id));
     } catch (err) {
-      alert(err.response?.data?.message || "Erreur lors de la suppression");
+      alert("Erreur lors de la suppression");
     }
   };
 
-  // Modifier une tâche
   const updateTask = async (id, newTitle) => {
     try {
       const res = await api.put(`/tasks/${id}`, { title: newTitle });
@@ -52,7 +58,7 @@ const TaskList = ({ tasks, setTasks }) => {
     <div>
       <ul className="task-list">
         {tasks.map((task) => (
-          <li key={task._id}>
+          <li key={task._id} className={isOverdue(task) ? "overdue" : ""}>
             <input
               type="checkbox"
               checked={task.completed || false}
@@ -68,12 +74,20 @@ const TaskList = ({ tasks, setTasks }) => {
             >
               {task.title}
             </span>
+            
+            {/* ✅ Affichage de la date d'échéance */}
+            {task.dueDate && (
+              <span className={`due-date ${isOverdue(task) ? "overdue-text" : ""}`}>
+                📅 {formatDate(task.dueDate)}
+              </span>
+            )}
+            
             <div className="task-actions">
               <button onClick={() => setEditingTask(task)} className="edit-btn">
-                ✏️ Modifier
+                ✏️
               </button>
               <button onClick={() => deleteTask(task._id)} className="delete-btn">
-                Supprimer
+                🗑️
               </button>
             </div>
           </li>
@@ -83,11 +97,9 @@ const TaskList = ({ tasks, setTasks }) => {
       {tasks.length > 0 && (
         <div className="task-stats">
           📊 {remainingTasks} tâche(s) restante(s) sur {tasks.length}
-          {remainingTasks === 0 && tasks.length > 0 && " 🎉 Félicitations !"}
         </div>
       )}
 
-      {/* Modal d'édition */}
       {editingTask && (
         <EditModal
           task={editingTask}

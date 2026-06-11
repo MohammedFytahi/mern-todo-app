@@ -17,7 +17,12 @@ router.get('/', auth, async (req, res) => {
 // Ajouter une tâche
 router.post('/', auth, async (req, res) => {
   try {
-    const task = new Task({ title: req.body.title, user: req.user.id });
+    const task = new Task({ 
+      title: req.body.title, 
+      user: req.user.id,
+      completed: false,
+      dueDate: req.body.dueDate || null  // ✅ Ajout de dueDate
+    });
     await task.save();
     res.json(task);
   } catch (err) {
@@ -40,29 +45,25 @@ router.delete('/:id', auth, async (req, res) => {
     res.status(500).json({ message: 'Erreur serveur lors de la suppression' });
   }
 });
-// Modifier une tâche (gère à la fois le titre et le statut completed)
+// Modifier une tâche
 router.put("/:id", auth, async (req, res) => {
   try {
-    console.log("PUT reçu - ID:", req.params.id);
-    console.log("Données reçues:", req.body);
-    
     const task = await Task.findOne({ _id: req.params.id, user: req.user.id });
     if (!task) {
       return res.status(404).json({ message: "Tâche non trouvée" });
     }
     
-    // Mettre à jour le titre si fourni
     if (req.body.title !== undefined) {
       task.title = req.body.title;
     }
-    
-    // Mettre à jour le statut completed si fourni
     if (req.body.completed !== undefined) {
       task.completed = req.body.completed;
     }
+    if (req.body.dueDate !== undefined) {  
+      task.dueDate = req.body.dueDate;
+    }
     
     await task.save();
-    console.log("Tâche mise à jour:", task);
     res.json(task);
   } catch (err) {
     console.error(err);

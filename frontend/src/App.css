@@ -226,3 +226,45 @@
   background-color: #f8f9fa;
   border-radius: 5px;
 }
+/* Formulaire avec date */
+.task-form {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.task-input {
+  flex: 2;
+  padding: 10px;
+  font-size: 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.date-input {
+  flex: 1;
+  padding: 10px;
+  font-size: 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+/* Date d'échéance */
+.due-date {
+  font-size: 12px;
+  color: #6c757d;
+  margin: 0 10px;
+  padding: 2px 8px;
+  background-color: #f8f9fa;
+  border-radius: 15px;
+}
+
+.overdue-text {
+  color: #dc3545;
+  background-color: #ffe5e5;
+}
+
+.task-list li.overdue {
+  border-left: 3px solid #dc3545;
+}
