@@ -41,4 +41,41 @@ router.delete('/:id', auth, async (req, res) => {
   }
 });
 
+router.put("/:id", auth, async (req, res) => {
+  try {
+    const task = await Task.findOne({ _id: req.params.id, user: req.user.id });
+    if (!task) {
+      return res.status(404).json({ message: "Tâche non trouvée" });
+    }
+    task.completed = req.body.completed !== undefined ? req.body.completed : !task.completed;
+    await task.save();
+    res.json(task);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur lors de la modification" });
+  }
+});
+
+router.put("/:id", auth, async (req, res) => {
+  try {
+    const task = await Task.findOne({ _id: req.params.id, user: req.user.id });
+    if (!task) {
+      return res.status(404).json({ message: "Tâche non trouvée" });
+    }
+    
+    if (req.body.title) {
+      task.title = req.body.title;
+    }
+    
+    if (req.body.completed !== undefined) {
+      task.completed = req.body.completed;
+    }
+    
+    await task.save();
+    res.json(task);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur lors de la modification" });
+  }
+});
 module.exports = router;

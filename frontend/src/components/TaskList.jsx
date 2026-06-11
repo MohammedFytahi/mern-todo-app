@@ -1,43 +1,99 @@
-import React from 'react';
-import api from '../axiosConfig';
+import React, { useState } from "react";
+import api from "../axiosConfig";
+import EditModal from "./EditModal";
 
 const TaskList = ({ tasks, setTasks }) => {
+  const [editingTask, setEditingTask] = useState(null);
+
+  // Basculer l'état complété
+  const toggleComplete = async (task) => {
+    try {
+      const res = await api.put(`/tasks/${task._id}`, { 
+        completed: !task.completed 
+      });
+      setTasks((prev) => 
+        prev.map((t) => (t._id === task._id ? res.data : t))
+      );
+    } catch (err) {
+      alert("Erreur lors de la mise à jour de la tâche");
+    }
+  };
+
+  // Supprimer une tâche
   const deleteTask = async (id) => {
-    if (!id) return;
+    if (!id) {
+      alert("ID de tâche invalide");
+      return;
+    }
     try {
       await api.delete(`/tasks/${id}`);
       setTasks((prev) => prev.filter((task) => task._id !== id));
     } catch (err) {
-      alert(err.response?.data?.message || 'Erreur lors de la suppression');
+      alert(err.response?.data?.message || "Erreur lors de la suppression");
     }
   };
 
+  // Modifier une tâche
+  const updateTask = async (id, newTitle) => {
+    try {
+      const res = await api.put(`/tasks/${id}`, { title: newTitle });
+      setTasks((prev) => 
+        prev.map((t) => (t._id === id ? res.data : t))
+      );
+      setEditingTask(null);
+    } catch (err) {
+      alert("Erreur lors de la modification");
+    }
+  };
+
+  const remainingTasks = tasks.filter(t => !t.completed).length;
+
   return (
-    <div className="task-list mt-4">
-      {tasks.length === 0 ? (
-        <p className="text-center text-base-content/70">Aucune tâche pour le moment.</p>
-      ) : (
-        <div className="space-y-4">
-          {tasks.map((task) => (
-            <div
-              key={task._id}
-              className="card bg-base-100 shadow-lg hover:shadow-xl transition-shadow p-4 flex flex-row justify-between items-center"
+    <div>
+      <ul className="task-list">
+        {tasks.map((task) => (
+          <li key={task._id}>
+            <input
+              type="checkbox"
+              checked={task.completed || false}
+              onChange={() => toggleComplete(task)}
+              className="task-checkbox"
+            />
+            <span
+              className="task-title"
+              style={{
+                textDecoration: task.completed ? "line-through" : "none",
+                opacity: task.completed ? 0.7 : 1,
+              }}
             >
-              <div className="flex-1">
-                <h3 className="text-lg font-medium text-base-content">{task.title}</h3>
-                <p className="text-sm text-base-content/60">
-                  Ajoutée le {new Date(task.createdAt).toLocaleDateString()}
-                </p>
-              </div>
-              <button
-                onClick={() => deleteTask(task._id)}
-                className="btn btn-error btn-sm hover:btn-error/80"
-              >
+              {task.title}
+            </span>
+            <div className="task-actions">
+              <button onClick={() => setEditingTask(task)} className="edit-btn">
+                ✏️ Modifier
+              </button>
+              <button onClick={() => deleteTask(task._id)} className="delete-btn">
                 Supprimer
               </button>
             </div>
-          ))}
+          </li>
+        ))}
+      </ul>
+      
+      {tasks.length > 0 && (
+        <div className="task-stats">
+          📊 {remainingTasks} tâche(s) restante(s) sur {tasks.length}
+          {remainingTasks === 0 && tasks.length > 0 && " 🎉 Félicitations !"}
         </div>
+      )}
+
+      {/* Modal d'édition */}
+      {editingTask && (
+        <EditModal
+          task={editingTask}
+          onSave={updateTask}
+          onClose={() => setEditingTask(null)}
+        />
       )}
     </div>
   );
