@@ -11,6 +11,7 @@ function App() {
   const [token, setToken] = useState(localStorage.getItem('token') || '');
   const [tasks, setTasks] = useState([]);
   const [user, setUser] = useState(null);
+  const [searchTerm, setSearchTerm] = useState(''); // ✅ Ajout de l'état recherche
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -36,7 +37,13 @@ function App() {
     localStorage.removeItem('token');
     setTasks([]);
     setUser(null);
+    setSearchTerm(''); // ✅ Réinitialiser la recherche
   };
+
+  // ✅ Filtrer les tâches en fonction du terme de recherche
+  const filteredTasks = tasks.filter((task) =>
+    task.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (!token) {
     return (
@@ -55,8 +62,34 @@ function App() {
       <Header onLogout={logout} tasks={tasks} user={user} />
       <main className="flex-grow pt-16 container mx-auto px-4">
         <h1 className="text-2xl font-bold mb-4 text-header-bg">Ma To-Do List</h1>
+        
+        {/* ✅ Barre de recherche */}
+        <div className="search-container mb-4">
+          <input
+            type="text"
+            placeholder="🔍 Rechercher une tâche..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="search-input"
+          />
+          {searchTerm && (
+            <button onClick={() => setSearchTerm("")} className="clear-search">
+              ✖
+            </button>
+          )}
+        </div>
+
+        {/* ✅ Information du nombre de résultats */}
+        <div className="search-info mb-3">
+          {searchTerm ? (
+            <span>{filteredTasks.length} résultat(s) pour "{searchTerm}"</span>
+          ) : (
+            <span>{tasks.length} tâche(s) au total</span>
+          )}
+        </div>
+
         <TaskForm setTasks={setTasks} />
-        <TaskList tasks={tasks} setTasks={setTasks} />
+        <TaskList tasks={filteredTasks} setTasks={setTasks} />
       </main>
       <Footer />
     </div>
