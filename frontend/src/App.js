@@ -1,46 +1,56 @@
-import React, { useState, useEffect } from 'react';
-import api from './axiosConfig';
-import AuthForm from './components/AuthForm';
-import TaskForm from './components/TaskForm';
-import TaskList from './components/TaskList';
-import Header from './components/Header';
-import Footer from './components/Footer';
-import './App.css';
+import React, { useState, useEffect } from "react";
+import api from "./axiosConfig";
+import AuthForm from "./components/AuthForm";
+import TaskForm from "./components/TaskForm";
+import TaskList from "./components/TaskList";
+import Header from "./components/Header";
+import Footer from "./components/Footer";
+import Loader from "./components/Loader";
+import { useToast } from "./context/ToastContext";  
+import "./App.css";
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem('token') || '');
   const [tasks, setTasks] = useState([]);
   const [user, setUser] = useState(null);
-  const [searchTerm, setSearchTerm] = useState(''); // ✅ Ajout de l'état recherche
+  const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
+  const { showToast } = useToast();  
 
   useEffect(() => {
     const fetchUserData = async () => {
       if (token) {
+        setLoading(true);
         try {
           const tasksRes = await api.get('/tasks');
           setTasks(tasksRes.data);
           const userRes = await api.get('/auth/me');
           setUser(userRes.data);
         } catch (err) {
-          console.error('Erreur lors de la récupération des données:', err);
+          console.error('Erreur:', err);
+          showToast("Erreur de chargement des données", "error");  // ✅ Toast
           setToken('');
           localStorage.removeItem('token');
           setUser(null);
+        } finally {
+          setLoading(false);
         }
+      } else {
+        setLoading(false);
       }
     };
     fetchUserData();
-  }, [token]);
+  }, [token, showToast]);
 
   const logout = () => {
     setToken('');
     localStorage.removeItem('token');
     setTasks([]);
     setUser(null);
-    setSearchTerm(''); // ✅ Réinitialiser la recherche
+    setSearchTerm('');
+    showToast("Déconnexion réussie", "info");  // ✅ Toast
   };
 
-  // ✅ Filtrer les tâches en fonction du terme de recherche
   const filteredTasks = tasks.filter((task) =>
     task.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -63,7 +73,6 @@ function App() {
       <main className="flex-grow pt-16 container mx-auto px-4">
         <h1 className="text-2xl font-bold mb-4 text-header-bg">Ma To-Do List</h1>
         
-        {/* ✅ Barre de recherche */}
         <div className="search-container mb-4">
           <input
             type="text"
@@ -79,7 +88,6 @@ function App() {
           )}
         </div>
 
-        {/* ✅ Information du nombre de résultats */}
         <div className="search-info mb-3">
           {searchTerm ? (
             <span>{filteredTasks.length} résultat(s) pour "{searchTerm}"</span>
@@ -89,7 +97,12 @@ function App() {
         </div>
 
         <TaskForm setTasks={setTasks} />
-        <TaskList tasks={filteredTasks} setTasks={setTasks} />
+        
+        {loading ? (
+          <Loader message="Chargement de vos tâches..." />
+        ) : (
+          <TaskList tasks={filteredTasks} setTasks={setTasks} />
+        )}
       </main>
       <Footer />
     </div>

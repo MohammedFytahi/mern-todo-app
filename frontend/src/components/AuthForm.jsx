@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import api from '../axiosConfig';
+import { useToast } from '../context/ToastContext';  
 
 const AuthForm = ({ setToken, setUser }) => {
   const [fullName, setFullName] = useState('');
@@ -7,10 +8,13 @@ const AuthForm = ({ setToken, setUser }) => {
   const [password, setPassword] = useState('');
   const [profilePicture, setProfilePicture] = useState(null);
   const [isLogin, setIsLogin] = useState(true);
-  const [showPassword, setShowPassword] = useState(false); // État pour afficher/masquer
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);  
+  const { showToast } = useToast();  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
     try {
       if (isLogin) {
@@ -18,6 +22,7 @@ const AuthForm = ({ setToken, setUser }) => {
         setToken(res.data.token);
         setUser(res.data.user);
         localStorage.setItem('token', res.data.token);
+        showToast("Connexion réussie !", "success"); 
       } else {
         const formData = new FormData();
         formData.append('fullName', fullName);
@@ -30,7 +35,7 @@ const AuthForm = ({ setToken, setUser }) => {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
         if (res.status === 201) {
-          alert('Inscription réussie, connectez-vous !');
+          showToast("Inscription réussie ! Connectez-vous.", "success");  
           setIsLogin(true);
           setFullName('');
           setEmail('');
@@ -40,7 +45,9 @@ const AuthForm = ({ setToken, setUser }) => {
       }
     } catch (err) {
       console.error('Erreur capturée:', err.response?.data || err.message);
-      alert(err.response?.data?.message || 'Erreur lors de la soumission');
+      showToast(err.response?.data?.message || 'Erreur lors de la soumission', "error");  
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -55,6 +62,7 @@ const AuthForm = ({ setToken, setUser }) => {
             onChange={(e) => setFullName(e.target.value)}
             placeholder="Nom complet"
             className="input input-bordered w-full"
+            disabled={loading}
           />
         )}
         <input
@@ -64,6 +72,7 @@ const AuthForm = ({ setToken, setUser }) => {
           placeholder="Email"
           required
           className="input input-bordered w-full"
+          disabled={loading}
         />
         <div className="relative">
           <input
@@ -73,6 +82,7 @@ const AuthForm = ({ setToken, setUser }) => {
             placeholder="Mot de passe"
             required
             className="input input-bordered w-full pr-10"
+            disabled={loading}
           />
           <button
             type="button"
@@ -124,15 +134,17 @@ const AuthForm = ({ setToken, setUser }) => {
             accept="image/*"
             onChange={(e) => setProfilePicture(e.target.files[0])}
             className="file-input file-input-bordered w-full"
+            disabled={loading}
           />
         )}
-        <button type="submit" className="btn btn-primary w-full">
-          {isLogin ? 'Se connecter' : "S'inscrire"}
+        <button type="submit" className="btn btn-primary w-full" disabled={loading}>
+          {loading ? "Chargement..." : (isLogin ? 'Se connecter' : "S'inscrire")}
         </button>
       </form>
       <button
         onClick={() => setIsLogin(!isLogin)}
         className="btn btn-ghost mt-2 w-full"
+        disabled={loading}
       >
         {isLogin ? 'Pas de compte ? Inscrivez-vous' : 'Déjà un compte ? Connectez-vous'}
       </button>

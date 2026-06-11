@@ -1,17 +1,18 @@
 import React, { useState } from "react";
 import api from "../axiosConfig";
 import EditModal from "./EditModal";
+import { useToast } from "../context/ToastContext";  // ✅ Importer
 
 const TaskList = ({ tasks, setTasks }) => {
   const [editingTask, setEditingTask] = useState(null);
+  const [loadingAction, setLoadingAction] = useState(null);
+  const { showToast } = useToast();  // ✅ Utiliser le hook
 
-  // ✅ Fonction pour vérifier si une tâche est en retard
   const isOverdue = (task) => {
     if (!task.dueDate || task.completed) return false;
     return new Date(task.dueDate) < new Date();
   };
 
-  // ✅ Formater la date
   const formatDate = (dateString) => {
     if (!dateString) return null;
     const date = new Date(dateString);
@@ -19,6 +20,7 @@ const TaskList = ({ tasks, setTasks }) => {
   };
 
   const toggleComplete = async (task) => {
+    setLoadingAction(task._id);
     try {
       const res = await api.put(`/tasks/${task._id}`, { 
         completed: !task.completed 
@@ -26,29 +28,44 @@ const TaskList = ({ tasks, setTasks }) => {
       setTasks((prev) => 
         prev.map((t) => (t._id === task._id ? res.data : t))
       );
+      const status = !task.completed ? "complétée" : "décochée";
+      showToast(`Tâche ${status} !`, "success");  // ✅ Toast
     } catch (err) {
-      alert("Erreur lors de la mise à jour");
+      showToast("Erreur lors de la mise à jour", "error");  // ✅ Toast
+    } finally {
+      setLoadingAction(null);
     }
   };
 
-  const deleteTask = async (id) => {
+  const deleteTask = async (id, title) => {
+    setLoadingAction(id);
     try {
       await api.delete(`/tasks/${id}`);
       setTasks((prev) => prev.filter((task) => task._id !== id));
+      showToast(`"${title}" supprimée`, "warning");  // ✅ Toast
     } catch (err) {
-      alert("Erreur lors de la suppression");
+      showToast("Erreur lors de la suppression", "error");  // ✅ Toast
+    } finally {
+      setLoadingAction(null);
     }
   };
 
-  const updateTask = async (id, newTitle) => {
+  const updateTask = async (id, newTitle, newDueDate) => {
+    setLoadingAction(id);
     try {
-      const res = await api.put(`/tasks/${id}`, { title: newTitle });
+      const res = await api.put(`/tasks/${id}`, { 
+        title: newTitle,
+        dueDate: newDueDate
+      });
       setTasks((prev) => 
         prev.map((t) => (t._id === id ? res.data : t))
       );
       setEditingTask(null);
+      showToast("Tâche modifiée avec succès !", "success");  // ✅ Toast
     } catch (err) {
-      alert("Erreur lors de la modification");
+      showToast("Erreur lors de la modification", "error");  // ✅ Toast
+    } finally {
+      setLoadingAction(null);
     }
   };
 
@@ -63,8 +80,10 @@ const TaskList = ({ tasks, setTasks }) => {
               type="checkbox"
               checked={task.completed || false}
               onChange={() => toggleComplete(task)}
+              disabled={loadingAction === task._id}
               className="task-checkbox"
             />
+            
             <span
               className="task-title"
               style={{
@@ -75,7 +94,6 @@ const TaskList = ({ tasks, setTasks }) => {
               {task.title}
             </span>
             
-            {/* ✅ Affichage de la date d'échéance */}
             {task.dueDate && (
               <span className={`due-date ${isOverdue(task) ? "overdue-text" : ""}`}>
                 📅 {formatDate(task.dueDate)}
@@ -83,10 +101,18 @@ const TaskList = ({ tasks, setTasks }) => {
             )}
             
             <div className="task-actions">
-              <button onClick={() => setEditingTask(task)} className="edit-btn">
+              <button 
+                onClick={() => setEditingTask(task)} 
+                className="edit-btn"
+                disabled={loadingAction === task._id}
+              >
                 ✏️
               </button>
-              <button onClick={() => deleteTask(task._id)} className="delete-btn">
+              <button 
+                onClick={() => deleteTask(task._id, task.title)} 
+                className="delete-btn"
+                disabled={loadingAction === task._id}
+              >
                 🗑️
               </button>
             </div>
